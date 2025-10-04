@@ -53,7 +53,7 @@ app.post('/login', async (req, res) => {
     if (!user) return res.send('No account found. Please sign in first.');
     if (user.password !== password) return res.send('Incorrect password.');
 
-    res.redirect('/weather.html');
+    res.redirect('/index.html');
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).send('Server error during login.');
