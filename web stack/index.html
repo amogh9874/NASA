@@ -3,9 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Weather App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
-<body>
-    <h1>weather app</h1>
+<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">Weather App</h1>
+
+        <div id="step1" class="step">
+            <label for="location" class="block text-gray-700 dark:text-gray-300 mb-2">Enter Location</label>
+            <div class="relative">
+                <input type="text" id="location" placeholder="E.g., New York, London" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-3 pr-10 focus:ring-blue-500 focus:border-blue-500">
+                <button id="next1" class="absolute inset-y-0 right-0 px-4 text-gray-500 dark:text-gray-400">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+             <p id="location-error" class="text-red-500 text-sm mt-2 hidden">Please enter a valid location.</p>
+        </div>
+
+        <div id="step2" class="step hidden">
+            <label for="date" class="block text-gray-700 dark:text-gray-300 mb-2">Select Date</label>
+            <div class="relative">
+                <select id="date" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-3 pr-10 focus:ring-blue-500 focus:border-blue-500">
+                    <!-- Date options will be populated by JS -->
+                </select>
+                 <button id="next2" class="absolute inset-y-0 right-0 px-4 text-gray-500 dark:text-gray-400">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="step3" class="step hidden">
+            <label for="time" class="block text-gray-700 dark:text-gray-300 mb-2">Select Time</label>
+            <div class="relative">
+                <select id="time" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-3 pr-10 focus:ring-blue-500 focus:border-blue-500">
+                   <!-- Time options will be populated by JS -->
+                </select>
+                 <button id="getResult" class="absolute inset-y-0 right-0 px-4 text-gray-500 dark:text-gray-400">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="result" class="hidden mt-8 text-center">
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Result</h2>
+            <div class="flex justify-center items-center space-x-6 text-5xl text-gray-700 dark:text-gray-300 mb-4" id="weather-icons">
+                 <!-- Weather icons will be injected here -->
+            </div>
+             <p id="weather-condition-text" class="text-lg text-gray-600 dark:text-gray-400 mb-6"></p>
+
+            <div class="flex justify-center space-x-4">
+                <div class="bg-blue-100 dark:bg-blue-900/50 rounded-lg p-4 w-1/2">
+                    <p class="text-lg font-medium text-blue-800 dark:text-blue-300">Celsius</p>
+                    <p id="temp-celsius" class="text-3xl font-bold text-blue-900 dark:text-blue-200">-</p>
+                </div>
+                <div class="bg-orange-100 dark:bg-orange-900/50 rounded-lg p-4 w-1/2">
+                    <p class="text-lg font-medium text-orange-800 dark:text-orange-300">Fahrenheit</p>
+                    <p id="temp-fahrenheit" class="text-3xl font-bold text-orange-900 dark:text-orange-200">-</p>
+                </div>
+            </div>
+            <button id="reset" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                Check Another Location
+            </button>
+        </div>
+        <div id="loader" class="hidden text-center mt-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto"></div>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">Fetching weather data...</p>
+        </div>
+    </div>
+
+    <script>
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const resultDiv = document.getElementById('result');
+        const loader = document.getElementById('loader');
+
+        const next1Btn = document.getElementById('next1');
+        const next2Btn = document.getElementById('next2');
+        const getResultBtn = document.getElementById('getResult');
+        const resetBtn = document.getElementById('reset');
+
+        const locationInput = document.getElementById('location');
+        const dateInput = document.getElementById('date');
+        const timeInput = document.getElementById('time');
+        const locationError = document.getElementById('location-error');
+
+        const weatherIconsContainer = document.getElementById('weather-icons');
+        const weatherConditionText = document.getElementById('weather-condition-text');
+        const tempCelsius = document.getElementById('temp-celsius');
+        const tempFahrenheit = document.getElementById('temp-fahrenheit');
+        
+        function populateDateDropdown() {
+            const today = new Date();
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+
+                const option = document.createElement('option');
+                const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD for value
+                option.value = dateString;
+                let displayString = date.toLocaleDateString('en-US', options);
+                if (i === 0) {
+                    displayString = "Today, " + displayString;
+                } else if (i === 1) {
+                    displayString = "Tomorrow, " + displayString;
+                }
+                option.textContent = displayString;
+                dateInput.appendChild(option);
+            }
+        }
+
+        function populateTimeDropdown() {
+            for (let i = 0; i < 24; i++) {
+                const hour = String(i).padStart(2, '0');
+                const option = document.createElement('option');
+                const ampm = i >= 12 ? 'PM' : 'AM';
+                let displayHour = i % 12;
+                if (displayHour === 0) displayHour = 12; // For 12 AM and 12 PM
+                
+                option.value = `${hour}:00`;
+                option.textContent = `${displayHour}:00 ${ampm}`;
+                timeInput.appendChild(option);
+            }
+            // Set a default time to the current hour, rounded
+            const now = new Date();
+            const currentHour = now.getHours();
+            timeInput.value = `${String(currentHour).padStart(2, '0')}:00`;
+        }
+
+        populateDateDropdown();
+        populateTimeDropdown();
+
+
+        next1Btn.addEventListener('click', () => {
+             if(locationInput.value.trim() === '') {
+                locationError.classList.remove('hidden');
+            } else {
+                locationError.classList.add('hidden');
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+            }
+        });
+
+        next2Btn.addEventListener('click', () => {
+            step2.classList.add('hidden');
+            step3.classList.remove('hidden');
+        });
+
+        getResultBtn.addEventListener('click', () => {
+            step3.classList.add('hidden');
+            loader.classList.remove('hidden');
+            // Mock API call and result display
+            setTimeout(() => {
+                fetchWeatherData();
+            }, 2000);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            resultDiv.classList.add('hidden');
+            step1.classList.remove('hidden');
+            locationInput.value = '';
+        });
+
+        function fetchWeatherData() {
+            loader.classList.add('hidden');
+            resultDiv.classList.remove('hidden');
+
+            // Mock data - replace with actual API call
+            const mockData = {
+                temp_c: Math.floor(Math.random() * 21) + 10, // 10 to 30
+                condition: ['Windy', 'Rainy', 'Sunny', 'Snowy'][Math.floor(Math.random() * 4)]
+            };
+            
+            const tempC = mockData.temp_c;
+            const tempF = Math.round((tempC * 9/5) + 32);
+            const condition = mockData.condition;
+
+            tempCelsius.textContent = `${tempC}°C`;
+            tempFahrenheit.textContent = `${tempF}°F`;
+            weatherConditionText.textContent = condition;
+
+            updateWeatherIcons(condition);
+        }
+
+        function updateWeatherIcons(condition) {
+            weatherIconsContainer.innerHTML = '';
+            let iconClass = '';
+            let iconColor = '';
+            
+            switch(condition.toLowerCase()) {
+                case 'windy':
+                    iconClass = 'fa-solid fa-wind';
+                    iconColor = 'text-gray-500';
+                    break;
+                case 'rainy':
+                    iconClass = 'fa-solid fa-cloud-showers-heavy';
+                    iconColor = 'text-blue-500';
+                    break;
+                case 'sunny':
+                    iconClass = 'fa-solid fa-sun';
+                    iconColor = 'text-yellow-500';
+                    break;
+                case 'snowy':
+                    iconClass = 'fa-solid fa-snowflake';
+                    iconColor = 'text-cyan-400';
+                    break;
+                default:
+                    iconClass = 'fa-solid fa-question-circle';
+                    iconColor = 'text-gray-400';
+            }
+
+            const iconElement = document.createElement('i');
+            iconElement.className = `${iconClass} ${iconColor}`;
+            weatherIconsContainer.appendChild(iconElement);
+        }
+    </script>
 </body>
 </html>
