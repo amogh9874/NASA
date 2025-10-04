@@ -1,7 +1,7 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #0b0c10; /* Deep space black */
-  color: #d4af37; /* Metallic gold accent */
+  background-color: #000401; /* Deep space black */
+  color: #ccb484; /* Metallic gold accent */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -25,13 +25,13 @@ body {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.6);
   width: 300px;
-  border: 1px solid #d4af37;
+  border: 1px solid #ebd79e;
 }
 
 .login-container h2 {
   text-align: center;
   margin-bottom: 24px;
-  color: #d4af37;
+  color: #ccb484;
 }
 
 .login-container input[type="email"],
@@ -39,20 +39,20 @@ body {
   width: 100%;
   padding: 10px;
   margin: 8px 0 16px;
-  border: 1px solid #d4af37;
+  border: 1px solid #ebd79e;
   border-radius: 4px;
   background-color: #0b0c10;
   color: #fff;
 }
 
 .login-container input::placeholder {
-  color: #d4af37;
+  color: #ebd79e;
 }
 
 .login-container button {
   width: 100%;
   padding: 10px;
-  background-color: #d4af37;
+  background-color: #ccb484;
   color: #0b0c10;
   border: none;
   border-radius: 4px;
@@ -61,5 +61,5 @@ body {
 }
 
 .login-container button:hover {
-  background-color: #bfa133;
+  background-color: #ebd79e;
 }
