@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Space Drifter Login</title>
+  <link rel="stylesheet" href="sign_in_styles.css">
+</head>
+<body>
+  <div class="logo-container">
+    <img src="sign_image/space_drifter_logo.png" alt="Space Drifter Logo">
+  </div>
+
+  <div class="login-container">
+    <h2>Log In</h2>
+    <form method="POST" action="/login">
+      <input type="email" name="email" placeholder="Email Address" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Log In</button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <button class="google-signin" onclick="window.location.href='/auth/google'">
+      <img src="sign_image/google_sign_in_image.png" alt="Google Logo"> Sign in with Google
+    </button>
+
+ <div class="divider">or</div>
+
+ <button class="alt-login" type="button" onclick="location.href='sign_in.html'">
+  Create New Account
+</button>
+
+
+  </div>
+</body>
+</html>
