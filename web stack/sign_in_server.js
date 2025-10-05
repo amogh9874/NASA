@@ -35,7 +35,9 @@ app.post('/sign-in', async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.send('User already exists. Please log in.');
 
-    const newUser = new User({ email, password });
+    const hashedPassword = await bcrypt.hash(password, 10);
+const newUser = new User({ email, password: hashedPassword });
+
     await newUser.save();
     res.send('Account created successfully!');
   } catch (err) {
@@ -51,7 +53,9 @@ app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.send('No account found. Please sign in first.');
-    if (user.password !== password) return res.send('Incorrect password.');
+    const match = await bcrypt.compare(password, user.password);
+if (!match) return res.send('Incorrect password.');
+
 
     res.redirect('/index.html');
   } catch (err) {
@@ -63,4 +67,28 @@ app.post('/login', async (req, res) => {
 // 🛰️ Start Server
 app.listen(3000, () => {
   console.log('Server is running on http://localhost:3000');
+});
+
+const bcrypt = require('bcrypt');
+
+// 🔐 Change Password Route
+app.post('/change-password', async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.send('User not found.');
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.send('Current password is incorrect.');
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.send('Password updated successfully!');
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).send('Server error during password update.');
+  }
 });
