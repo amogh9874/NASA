@@ -78,17 +78,14 @@
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-semibold mb-4">Details for <span id="selected-date-display" class="text-blue-600"></span></h3>
                 
-                <!-- Reminder List -->
                 <div id="reminders-container">
                     <h4 class="font-semibold text-gray-700 mb-2">Reminders</h4>
                     <ul id="reminders-list" class="space-y-2 mb-6">
-                        <!-- Reminders will be dynamically inserted here -->
                         <li id="no-reminders-msg" class="text-gray-500 text-sm">No reminders for this day.</li>
                     </ul>
                 </div>
                 <button id="add-reminder-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition font-semibold disabled:bg-gray-300">Add Reminder</button>
 
-                <!-- Weather Prediction -->
                 <div id="weather-container" class="mt-6 pt-6 border-t border-gray-200">
                     <h4 class="font-semibold text-gray-700 mb-2">AI Weather Forecast <span id="weather-date-display" class="font-normal text-gray-500"></span></h4>
                     <div id="weather-prediction" class="bg-gray-100 p-4 rounded-lg min-h-[80px]">
@@ -128,13 +125,9 @@
         </div>
     </div>
 
-    <script type="module">
-
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, onSnapshot, query, where, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAnalytics } from "firebase/analytics";
+    <script>
+        // --- CONFIGURATION ---
+        const API_BASE_URL = 'http://localhost:3000'; // The address of our new backend server
 
         // DOM Elements
         const calendarGrid = document.getElementById('calendar-grid');
@@ -156,66 +149,9 @@
         // App State
         let currentDate = new Date();
         let selectedDate = null;
-        let remindersUnsubscribe = null;
-        let db, auth, userId;
-        
-        // --- FIREBASE SETUP ---
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyC1S9iezU6oHQinUUE1MaDWizAdbli5d68",
-          authDomain: "nasa-2025-fc765.firebaseapp.com",
-          projectId: "nasa-2025-fc765",
-          storageBucket: "nasa-2025-fc765.firebasestorage.app",
-          messagingSenderId: "439222073741",
-          appId: "1:439222073741:web:73ace9d7c9b03423d8a5c4",
-          measurementId: "G-4EFCPGZ42H"
-        };
-
-        // This ensures the 'appId' variable used in your Firestore paths is correct
-        const appId = firebaseConfig.appId;
-        // The rest of the original conditional logic for firebaseConfig is no longer needed
-        // since you're providing the config directly.
-
-        async function initializeFirebase() {
-            if (!firebaseConfig) {
-                console.error("Firebase config is not available.");
-                return;
-            }
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                setLogLevel('Debug');
-                
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("User is signed in with UID:", userId);
-                        initializeAppState();
-                    } else {
-                        console.log("No user signed in, authenticating...");
-                        await authenticateUser();
-                    }
-                });
-            } catch (e) {
-                console.error("Error initializing Firebase:", e);
-            }
-        }
-
-        async function authenticateUser() {
-             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Authentication failed:", error);
-            }
-        }
 
         // --- CALENDAR LOGIC ---
-        function renderCalendar(year, month) {
+        async function renderCalendar(year, month) {
             calendarGrid.innerHTML = '';
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -223,71 +159,57 @@
 
             currentMonthYear.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-            // Fetch reminders for the current month view
-            fetchMonthReminders(year, month, (datesWithReminders) => {
-                // Create blank days for grid alignment
-                for (let i = 0; i < firstDay; i++) {
-                    calendarGrid.insertAdjacentHTML('beforeend', '<div></div>');
+            const datesWithReminders = await fetchMonthReminders(year, month);
+            
+            // Create blank days for grid alignment
+            for (let i = 0; i < firstDay; i++) {
+                calendarGrid.insertAdjacentHTML('beforeend', '<div></div>');
+            }
+
+            // Create date cells
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = date.toISOString().split('T')[0];
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day relative h-12 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100';
+                
+                const dateNum = document.createElement('span');
+                dateNum.className = 'date-num relative';
+                dateNum.textContent = day;
+                dayCell.appendChild(dateNum);
+                dayCell.dataset.date = dateStr;
+
+                if (date.toDateString() === today.toDateString()) {
+                    dayCell.classList.add('today', 'font-bold');
+                }
+                if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
+                    dayCell.classList.add('selected');
+                }
+                if (datesWithReminders.has(dateStr)) {
+                    dayCell.classList.add('has-reminder');
                 }
 
-                // Create date cells
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const date = new Date(year, month, day);
-                    const dateStr = date.toISOString().split('T')[0];
-                    const dayCell = document.createElement('div');
-                    dayCell.className = 'calendar-day relative h-12 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100';
-                    
-                    const dateNum = document.createElement('span');
-                    dateNum.className = 'date-num relative';
-                    dateNum.textContent = day;
-                    dayCell.appendChild(dateNum);
-                    dayCell.dataset.date = dateStr;
-
-                    if (date.toDateString() === today.toDateString()) {
-                        dayCell.classList.add('today', 'font-bold');
-                    }
-                    if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
-                        dayCell.classList.add('selected');
-                    }
-                    if (datesWithReminders.has(dateStr)) {
-                        dayCell.classList.add('has-reminder');
-                    }
-
-                    dayCell.addEventListener('click', () => handleDateClick(date));
-                    calendarGrid.appendChild(dayCell);
-                }
-            });
+                dayCell.addEventListener('click', () => handleDateClick(date));
+                calendarGrid.appendChild(dayCell);
+            }
         }
         
-        async function fetchMonthReminders(year, month, callback) {
-            if (!userId) {
-                callback(new Set());
-                return;
-            }
-            const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-            const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
-            const remindersRef = collection(db, `artifacts/${appId}/users/${userId}/reminders`);
-            const q = query(remindersRef, where("date", ">=", startDate), where("date", "<=", endDate));
-            
-            onSnapshot(q, (querySnapshot) => {
-                const datesWithReminders = new Set();
-                querySnapshot.forEach((doc) => {
-                    datesWithReminders.add(doc.data().date);
-                });
-                callback(datesWithReminders);
-            }, (error) => {
+        async function fetchMonthReminders(year, month) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/reminders/${year}/${month + 1}`);
+                const reminders = await response.json();
+                return new Set(reminders.map(r => r.date));
+            } catch (error) {
                 console.error("Error fetching month reminders:", error);
-                callback(new Set()); // Return empty set on error
-            });
+                return new Set();
+            }
         }
-
 
         function handleDateClick(date) {
             selectedDate = date;
             const formattedDate = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             selectedDateDisplay.textContent = formattedDate;
 
-            // Update UI styles for selected date
             document.querySelectorAll('.calendar-day').forEach(cell => {
                 cell.classList.remove('selected');
                 if (cell.dataset.date === date.toISOString().split('T')[0]) {
@@ -300,24 +222,21 @@
             resetWeatherView();
         }
 
-        // --- REMINDER LOGIC ---
-        function fetchRemindersForDate(date) {
-            if(remindersUnsubscribe) remindersUnsubscribe(); // Unsubscribe from previous listener
-            if(!userId) return;
-
+        // --- REMINDER LOGIC (API CALLS) ---
+        async function fetchRemindersForDate(date) {
             const dateStr = date.toISOString().split('T')[0];
-            const remindersRef = collection(db, `artifacts/${appId}/users/${userId}/reminders`);
-            const q = query(remindersRef, where("date", "==", dateStr));
+            try {
+                const response = await fetch(`${API_BASE_URL}/reminders/${dateStr}`);
+                const reminders = await response.json();
 
-            remindersUnsubscribe = onSnapshot(q, (querySnapshot) => {
                 remindersList.innerHTML = '';
-                if (querySnapshot.empty) {
+                if (reminders.length === 0) {
                     remindersList.appendChild(noRemindersMsg);
                     noRemindersMsg.style.display = 'list-item';
+                    resetWeatherView();
                 } else {
                     noRemindersMsg.style.display = 'none';
-                    querySnapshot.forEach((doc) => {
-                        const reminder = doc.data();
+                    reminders.forEach(reminder => {
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-center bg-blue-50 p-3 rounded-lg';
                         li.innerHTML = `
@@ -325,65 +244,62 @@
                                 <p class="font-semibold">${reminder.title}</p>
                                 <p class="text-sm text-gray-500">${formatTime(reminder.time)} - ${reminder.location}</p>
                             </div>
-                            <button data-id="${doc.id}" class="delete-reminder-btn text-red-500 hover:text-red-700 p-1 rounded-full">
+                            <button data-id="${reminder._id}" class="delete-reminder-btn text-red-500 hover:text-red-700 p-1 rounded-full">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         `;
                         remindersList.appendChild(li);
                     });
-                    // Get weather for the first reminder
-                    const firstReminder = querySnapshot.docs[0].data();
-                    getWeatherPrediction(firstReminder, date);
+                    getWeatherPrediction(reminders[0], date);
                 }
-            }, (error) => {
-                 console.error("Error fetching reminders: ", error);
-            });
+            } catch (error) {
+                console.error("Error fetching reminders for date:", error);
+            }
         }
         
         async function saveReminder(e) {
             e.preventDefault();
-            if(!userId || !selectedDate) return;
-
-            const title = document.getElementById('reminder-title').value;
-            const location = document.getElementById('reminder-location').value;
-            const time = document.getElementById('reminder-time').value;
+            if(!selectedDate) return;
 
             const reminderData = {
-                title,
-                location,
-                time,
+                title: document.getElementById('reminder-title').value,
+                location: document.getElementById('reminder-location').value,
+                time: document.getElementById('reminder-time').value,
                 date: selectedDate.toISOString().split('T')[0],
-                userId: userId
             };
             
             try {
-                const remindersRef = collection(db, `artifacts/${appId}/users/${userId}/reminders`);
-                await addDoc(remindersRef, reminderData);
+                await fetch(`${API_BASE_URL}/reminders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reminderData)
+                });
                 closeModal();
                 renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                fetchRemindersForDate(selectedDate);
             } catch(e) {
-                console.error("Error adding document: ", e);
+                console.error("Error adding reminder:", e);
             }
         }
 
         async function deleteReminder(e) {
-            if (!e.target.closest('.delete-reminder-btn')) return;
-            if (!userId) return;
-
             const btn = e.target.closest('.delete-reminder-btn');
-            const docId = btn.dataset.id;
+            if (!btn) return;
+
+            const reminderId = btn.dataset.id;
             
             try {
-                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/reminders`, docId));
+                await fetch(`${API_BASE_URL}/reminders/${reminderId}`, { method: 'DELETE' });
                 renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                fetchRemindersForDate(selectedDate);
             } catch (e) {
-                console.error("Error deleting document: ", e);
+                console.error("Error deleting reminder:", e);
             }
         }
 
         // --- WEATHER PREDICTION (GEMINI API) ---
         async function getWeatherPrediction(reminder, date, retries = 3, delay = 1000) {
-            const apiKey = "AIzaSyBQcapToNiaK25vjaJD6STL0RZdEKni3h0"; // Canvas will provide this
+            const apiKey = ""; // API Key is provided by the environment
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             const formattedDateForDisplay = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -407,27 +323,15 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
 
                 const result = await response.json();
                 const candidate = result.candidates?.[0];
                 
-                if (candidate && candidate.content?.parts?.[0]?.text) {
-                    weatherContent.textContent = candidate.content.parts[0].text;
-                } else {
-                    weatherContent.textContent = 'Could not get a weather prediction. Please try again.';
-                }
+                weatherContent.textContent = candidate?.content?.parts?.[0]?.text || 'Could not get a weather prediction.';
             } catch (error) {
                 console.error("Gemini API Error:", error);
-                if (retries > 0) {
-                    console.log(`Retrying... attempts left: ${retries - 1}`);
-                    await new Promise(res => setTimeout(res, delay));
-                    return getWeatherPrediction(reminder, retries - 1, delay * 2); // Exponential backoff
-                } else {
-                    weatherContent.textContent = 'Failed to fetch weather data after several attempts.';
-                }
+                weatherContent.textContent = 'Failed to fetch weather data.';
             } finally {
                 weatherLoading.classList.add('hidden');
             }
@@ -456,14 +360,10 @@
             weatherDateDisplay.textContent = '';
         }
         
-        function initializeAppState() {
-            if (!userId) {
-                console.log("Waiting for user authentication to complete...");
-                return;
-            }
+        function initializeApp() {
             const today = new Date();
             currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
-            handleDateClick(today); // Select today's date on load
+            handleDateClick(today);
             renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
         }
 
@@ -484,9 +384,7 @@
         remindersList.addEventListener('click', deleteReminder);
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', initializeFirebase);
-        
- 
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
