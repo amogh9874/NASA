@@ -129,33 +129,12 @@
     </div>
 
     <script type="module">
-        // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyC1S9iezU6oHQinUUE1MaDWizAdbli5d68",
-  authDomain: "nasa-2025-fc765.firebaseapp.com",
-  projectId: "nasa-2025-fc765",
-  storageBucket: "nasa-2025-fc765.firebasestorage.app",
-  messagingSenderId: "439222073741",
-  appId: "1:439222073741:web:73ace9d7c9b03423d8a5c4",
-  measurementId: "G-4EFCPGZ42H"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
 
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, addDoc, onSnapshot, query, where, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAnalytics } from "firebase/analytics";
 
         // DOM Elements
         const calendarGrid = document.getElementById('calendar-grid');
@@ -181,13 +160,21 @@ const analytics = getAnalytics(app);
         let db, auth, userId;
         
         // --- FIREBASE SETUP ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        let firebaseConfig;
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        } catch (e) {
-            console.error("Could not parse Firebase config:", e);
-        }
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyC1S9iezU6oHQinUUE1MaDWizAdbli5d68",
+          authDomain: "nasa-2025-fc765.firebaseapp.com",
+          projectId: "nasa-2025-fc765",
+          storageBucket: "nasa-2025-fc765.firebasestorage.app",
+          messagingSenderId: "439222073741",
+          appId: "1:439222073741:web:73ace9d7c9b03423d8a5c4",
+          measurementId: "G-4EFCPGZ42H"
+        };
+
+        // This ensures the 'appId' variable used in your Firestore paths is correct
+        const appId = firebaseConfig.appId;
+        // The rest of the original conditional logic for firebaseConfig is no longer needed
+        // since you're providing the config directly.
 
         async function initializeFirebase() {
             if (!firebaseConfig) {
@@ -396,7 +383,7 @@ const analytics = getAnalytics(app);
 
         // --- WEATHER PREDICTION (GEMINI API) ---
         async function getWeatherPrediction(reminder, date, retries = 3, delay = 1000) {
-            const apiKey = ""; // Canvas will provide this
+            const apiKey = "AIzaSyBQcapToNiaK25vjaJD6STL0RZdEKni3h0"; // Canvas will provide this
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             const formattedDateForDisplay = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });

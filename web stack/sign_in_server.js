@@ -57,7 +57,7 @@ app.post('/login', async (req, res) => {
 if (!match) return res.send('Incorrect password.');
 
 
-    res.redirect('/index.html');
+    res.redirect('/calendar.html');
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).send('Server error during login.');
