@@ -1,9 +1,9 @@
 # NASA
-NASA SPACEAPP
-
-
-use to run the server node sign_in_server.js
+Space Drifters NASA SPACEAPP
 <br>
-ctrl+c to kill the server 
+
+node sign_in_server.js  //use to run the server 
 <br>
-http://localhost:3000/sign_in.html
+ctrl+c //to kill the server 
+<br>
+http://localhost:3000/sign_in.html // open in browser 
