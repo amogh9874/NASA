@@ -5,7 +5,9 @@ Space Drifters NASA SPACEAPP
 requires node js to be installed in the computer for the commands to work
 <br>
 
-cd "web stack"
+after pulling the repo 
+<br>
+cd "web stack" //use command to change dir from Nasa to web stack 
 <br>
 node sign_in_server.js  //use commands in the powershell to run the server 
 <br>
