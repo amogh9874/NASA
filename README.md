@@ -13,4 +13,6 @@ node sign_in_server.js  //use commands in the powershell to run the server
 <br>
 ctrl+c //to kill the server 
 <br>
+node check_users.js  //to check user in the DB
+<br>
 http://localhost:3000/sign_in.html // open in browser 
