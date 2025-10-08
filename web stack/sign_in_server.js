@@ -103,33 +103,53 @@ app.post('/change-password', async (req, res) => {
 // 📅 Get reminders for a specific date
 app.get('/reminders/:date', async (req, res) => {
   await connectDB();
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Email query parameter is required' });
+
   try {
-    const reminders = await db.collection(COLLECTION_NAME).find({ date: req.params.date }).toArray();
+    const reminders = await db.collection(COLLECTION_NAME).find({
+      date: req.params.date,
+      email
+    }).toArray();
     res.status(200).json(reminders);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch reminders' });
   }
 });
 
+
 // 📆 Get all reminders for a month
 app.get('/reminders/:year/:month', async (req, res) => {
   await connectDB();
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Email query parameter is required' });
+
   try {
     const year = parseInt(req.params.year, 10);
     const month = parseInt(req.params.month, 10).toString().padStart(2, '0');
     const regex = new RegExp(`^${year}-${month}-`);
-    const reminders = await db.collection(COLLECTION_NAME).find({ date: { $regex: regex } }).toArray();
+
+    const reminders = await db.collection(COLLECTION_NAME).find({
+      date: { $regex: regex },
+      email
+    }).toArray();
     res.status(200).json(reminders);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch month reminders' });
   }
 });
 
+
 // ➕ Add a new reminder
 app.post('/reminders', async (req, res) => {
   await connectDB();
   try {
-    const reminder = req.body;
+    const { email, date, title, description } = req.body;
+    if (!email || !date || !title) {
+      return res.status(400).json({ error: 'Missing required fields: email, date, title' });
+    }
+
+    const reminder = { email, date, title, description };
     const result = await db.collection(COLLECTION_NAME).insertOne(reminder);
     res.status(201).json(result);
   } catch (error) {
@@ -137,21 +157,28 @@ app.post('/reminders', async (req, res) => {
   }
 });
 
+
 // ❌ Delete a reminder
 app.delete('/reminders/:id', async (req, res) => {
   await connectDB();
-  try {
-    const { id } = req.params;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid reminder ID format' });
+  const { id } = req.params;
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Email query parameter is required' });
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid reminder ID format' });
 
-    const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
-    if (result.deletedCount === 0) return res.status(404).json({ error: 'Reminder not found' });
+  try {
+    const result = await db.collection(COLLECTION_NAME).deleteOne({
+      _id: new ObjectId(id),
+      email
+    });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'Reminder not found or unauthorized' });
 
     res.status(200).json({ message: 'Reminder deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete reminder' });
   }
 });
+
 
 // 🛰️ Start Server
 app.listen(PORT, () => {
